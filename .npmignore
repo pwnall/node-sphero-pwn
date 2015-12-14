@@ -1,0 +1,21 @@
+# Vim.
+*.swp
+.vimrc
+
+# OSX
+.DS_Store
+
+# Git.
+.git
+
+# Npm modules.
+/node_modules
+
+# Node output.
+npm-debug.log
+
+# Node packaging output.
+sphero-pwn-*.tgz
+
+# Auto-generated documentation.
+doc/

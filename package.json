@@ -1,0 +1,40 @@
+{
+  "name": "sphero-pwn",
+  "version": "0.1.0",
+  "description": "Sphero API wrapper",
+  "keywords": ["sphero"],
+  "homepage": "https://github.com/pwnall/node-sphero-pwn",
+  "author": "Victor Costan <victor@costan.us> (http://www.costan.us)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pwnall/node-sphero-pwn.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pwnall/node-sphero-pwn/issues"
+  },
+  "engines": {
+    "node": "5.x"
+  },
+  "dependencies": {
+    "noble": ">= 1.2.1",
+    "serialport": ">= 2.0.5"
+  },
+  "devDependencies": {
+    "chai": ">= 3.4.1",
+    "codo": ">= 2.0.11",
+    "mocha": ">= 2.3.4",
+    "sinon": ">= 1.17.2",
+    "sinon-chai": ">= 2.8.0"
+  },
+  "main": "lib/index.js",
+  "directories": {
+    "lib": "lib",
+    "src": "src",
+    "test": "test"
+  },
+  "scripts": {
+    "start": "node lib/boot.js",
+    "test": "node node_modules/mocha/bin/mocha --compilers coffee:coffee-script/register --timeout 5000 --require test/helpers.coffee"
+  }
+}
