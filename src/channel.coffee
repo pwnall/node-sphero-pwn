@@ -1,11 +1,10 @@
 serialport = require 'serialport'
-EventEmitter = require 'events'
 
 # Communication channel with a robot.
 #
 # This is a light abstraction over the Bluetooth serial port (RFCONN) used to
 # talk to a robot.
-class Channel extends EventEmitter
+class Channel
   # Opens up a communication channel with a robot.
   #
   # @param {String} rfconnPath the path to the device file connecting to the
@@ -19,7 +18,7 @@ class Channel extends EventEmitter
         { baudRate: baudRate, dataBits: 8, stopBits: 1,
         parser: serialport.parsers.raw }
     @_port.on 'error', @_onError.bind(@)
-    @_port.on 'data', @_onData.bind(@)
+    @_port.on 'data', (data) => @onData data
     @_port.on 'close', @_onClose.bind(@)
 
   # Queues up some binary data to be sent to the robot.
@@ -42,15 +41,19 @@ class Channel extends EventEmitter
   close: ->
     @_port.close (error) =>
       if error
-        @emit 'error', error
+        @_onError error
 
-  # Called when data is available on the channel.
-  _onData: (data) ->
-    @emit 'data', data
+  # Called when data is received from the robot.
+  #
+  # @param {Buffer} data the received data bytes
+  onData: (data) ->
+    return
 
   # Called when an error occurs.
+  #
+  # @param {Error} error the error that occured
   _onError: (error) ->
-    @emit 'error', error
+    @onError error
 
 
 module.exports = Channel
