@@ -3,7 +3,7 @@ ReplayChannel = SpheroPwn.ReplayChannel
 describe 'ReplayChannel', ->
   describe 'with a 1-write recording', ->
     beforeEach ->
-      @channel = new ReplayChannel testRecordingPath('replay-1write')
+      @channel = new ReplayChannel testRecordingPath('synthetic-1write')
 
     it 'accepts a correct write', ->
       @channel.write(new Buffer('Hello'))
@@ -30,7 +30,7 @@ describe 'ReplayChannel', ->
 
   describe 'with a 1-read recording', ->
     beforeEach ->
-      @channel = new ReplayChannel testRecordingPath('replay-1read')
+      @channel = new ReplayChannel testRecordingPath('synthetic-1read')
       @buffers = []
       @channel.onData = (data) => @buffers.push data
 
@@ -42,7 +42,7 @@ describe 'ReplayChannel', ->
 
     it 'reports the data before the close call is issued', ->
       (new Promise (resolve, reject) =>
-        @channel = new ReplayChannel testRecordingPath('replay-1read')
+        @channel = new ReplayChannel testRecordingPath('synthetic-1read')
         @channel.onData = (data) => resolve data
       ).then (data) =>
         expect(data).to.deep.equal new Buffer('world')
@@ -50,7 +50,7 @@ describe 'ReplayChannel', ->
 
   describe 'with a write-read-write-read recording', ->
     beforeEach ->
-      @channel = new ReplayChannel testRecordingPath('replay-wrwr')
+      @channel = new ReplayChannel testRecordingPath('synthetic-wrwr')
 
     it 'rejects an immediate close', ->
       @channel.close()
@@ -114,7 +114,7 @@ describe 'ReplayChannel', ->
 
   describe 'with a write-read-read-write-read-read recording', ->
     beforeEach ->
-      @channel = new ReplayChannel testRecordingPath('replay-wrrwrr')
+      @channel = new ReplayChannel testRecordingPath('synthetic-wrrwrr')
 
     it 'reports reads right after writes', ->
       (new Promise (resolve, reject) =>

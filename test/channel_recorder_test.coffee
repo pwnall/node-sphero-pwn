@@ -19,7 +19,7 @@ describe 'ChannelRecorder', ->
       done()
 
   it 'records a write correctly', ->
-    @channel = new ReplayChannel testRecordingPath('replay-1write')
+    @channel = new ReplayChannel testRecordingPath('synthetic-1write')
     @recorder = new ChannelRecorder @channel, @path
     @recorder.write(new Buffer('Hello'))
       .then =>
@@ -28,13 +28,13 @@ describe 'ChannelRecorder', ->
         fs.readFile @path, 'utf8'
       .then (recording) =>
         @recording = recording
-        fs.readFile testRecordingPath('replay-1write'), 'utf8'
+        fs.readFile testRecordingPath('synthetic-1write'), 'utf8'
       .then (goldenRecording) =>
         expect(@recording).to.equal goldenRecording
 
   it 'reports a read correctly', ->
     (new Promise (resolve, reject) =>
-      @channel = new ReplayChannel testRecordingPath('replay-1read')
+      @channel = new ReplayChannel testRecordingPath('synthetic-1read')
       @recorder = new ChannelRecorder @channel, @path
       @recorder.onData = (data) => resolve data
     ).then (data) =>
@@ -44,12 +44,12 @@ describe 'ChannelRecorder', ->
       fs.readFile @path, 'utf8'
      .then (recording) =>
       @recording = recording
-      fs.readFile testRecordingPath('replay-1read'), 'utf8'
+      fs.readFile testRecordingPath('synthetic-1read'), 'utf8'
      .then (goldenRecording) =>
       expect(@recording).to.equal goldenRecording
 
   it 'reports a write-read-write-read correctly', ->
-    @channel = new ReplayChannel testRecordingPath('replay-wrwr')
+    @channel = new ReplayChannel testRecordingPath('synthetic-wrwr')
     @recorder = new ChannelRecorder @channel, @path
 
     (new Promise (resolve, reject) =>
@@ -67,6 +67,6 @@ describe 'ChannelRecorder', ->
       fs.readFile @path, 'utf8'
      .then (recording) =>
       @recording = recording
-      fs.readFile testRecordingPath('replay-wrwr'), 'utf8'
+      fs.readFile testRecordingPath('synthetic-wrwr'), 'utf8'
      .then (goldenRecording) =>
       expect(@recording).to.equal goldenRecording

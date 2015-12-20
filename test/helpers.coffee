@@ -4,21 +4,38 @@ global.sinon = require 'sinon'
 sinonChai = require 'sinon-chai'
 global.chai.use sinonChai
 
+global.assert = global.chai.assert
+global.expect = global.chai.expect
+
 global.SpheroPwn = require '../lib/index.js'
 
 global.spheroTestConfig =
   rfconnPath: process.env['SPHERO_DEV']
 
+fs = require 'fs-promise'
 path = require 'path'
+
 
 # The path to a recording file in the test recordings directory.
 #
-# @param {String} name the recording name; each test case should use its own
-#   recordings
+# @param {String} recordingName used to name the recording file; each test case
+#   should use its own recordings
 # @return {String} a full path to the file holding the desired recording
-global.testRecordingPath = (name) ->
-  path.join __dirname, 'data', "#{name}.txt"
+global.testRecordingPath = (recordingName) ->
+  path.join __dirname, 'data', "#{recordingName}.txt"
 
-
-global.assert = global.chai.assert
-global.expect = global.chai.expect
+# Creates a channel recording to a file.
+#
+# @param {String} recordingName used to name the recording file; each test case
+#   should use its own recordings
+# @return {Channel} a {ReplayChannel} if the recording exists, otherwise a
+#   {ChannelRecorder} wrapping a {Channel} to the live device pointed to by the
+#   SPHERO_DEV environment variable
+global.testRecordingChannel = (recordingName) ->
+  recordingPath = testRecordingPath recordingName
+  fs.stat(recordingPath)
+    .then ->
+      new SpheroPwn.ReplayChannel recordingPath
+    .catch (error) ->
+      channel = new SpheroPwn.Channel process.env['SPHERO_DEV']
+      new SpheroPwn.ChannelRecorder channel, recordingPath

@@ -19,7 +19,7 @@ class Command
   #   not reset the client interactivity timeout
   constructor: (deviceId, commandId, dataLength, flags) ->
     @_dataLength = dataLength
-    @buffer = new Buffer 6 + @_dataLength
+    @buffer = new Buffer 7 + @_dataLength
     @buffer[0] = 0xFF
     @buffer[2] = deviceId
     @buffer[3] = commandId
@@ -41,7 +41,7 @@ class Command
   # @return {Command} this
   setSequence: (sequence) ->
     @buffer[4] = sequence
-    @buffer[5 + @_dataLength] = Command.checksum @buffer, 2, 6 + @_dataLength
+    @buffer[6 + @_dataLength] = Command.checksum @buffer, 2, 6 + @_dataLength
     @
 
   # Computes the checksum over a range of bytes in a buffer

@@ -23,7 +23,23 @@ describe 'Command', ->
       expect(Command.checksum(buffer, 2, 6)).to.equal 0xAB
 
   describe 'constructor', ->
-    it 'builds a ping command correctly', ->
+    it 'builds a ping correctly', ->
       command = new Command 0x00, 0x01, 0
       command.setSequence 0x52
-      expect(command.buffer.toString('hex')).to.equal 'ffff000152ab'
+      expect(command.buffer.toString('hex')).to.equal 'ffff00015201ab'
+
+    it 'builds a noResponse ping correctly', ->
+      command = new Command 0x00, 0x01, 0, noResponse: true
+      command.setSequence 0x52
+      expect(command.buffer.toString('hex')).to.equal 'fffe00015201ab'
+
+    it 'builds a noTimeoutReset ping correctly', ->
+      command = new Command 0x00, 0x01, 0, noTimeoutReset: true
+      command.setSequence 0x52
+      expect(command.buffer.toString('hex')).to.equal 'fffd00015201ab'
+
+    it 'builds a getUserConfig command correctly', ->
+      command = new Command 0x02, 0x40, 1
+      command.buffer[6] = 0x01
+      command.setSequence 0x52
+      expect(command.buffer.toString('hex')).to.equal 'ffff024052020168'

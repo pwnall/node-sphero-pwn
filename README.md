@@ -25,6 +25,13 @@ Install all the dependencies.
 npm install
 ```
 
+Set the `SPHERO_DEV` environment variable to point to the Bluetooth RFCONN port
+of your Sphero.
+
+```bash
+export SPHERO_DEV=/dev/tty.Sphero-XXX-AMP-SPP
+```
+
 Run the tests.
 
 ```bash
