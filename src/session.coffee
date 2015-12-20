@@ -8,6 +8,7 @@ class Session extends EventEmitter
     @_tokenizer.onResponse = @_onTokenizerResponse.bind(@)
     @_tokenizer.onAsync = @_onTokenizerAsync.bind(@)
 
+
   # @see {Tokenizer#onResponse}
   @_onTokenizerResponse: (response) ->
     null
