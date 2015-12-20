@@ -40,6 +40,13 @@ describe 'ReplayChannel', ->
           expect(@buffers.length).to.equal 1
           expect(@buffers[0]).to.deep.equal new Buffer('world')
 
+    it 'reports the data before the close call is issued', ->
+      (new Promise (resolve, reject) =>
+        @channel = new ReplayChannel testRecordingPath('replay-1read')
+        @channel.onData = (data) => resolve data
+      ).then (data) =>
+        expect(data).to.deep.equal new Buffer('world')
+        @channel.close()
 
   describe 'with a write-read-write-read recording', ->
     beforeEach ->
@@ -127,5 +134,3 @@ describe 'ReplayChannel', ->
        .then (data) =>
         expect(data).to.deep.equal [new Buffer('iab'), new Buffer('owrld')]
         @channel.close()
-
-

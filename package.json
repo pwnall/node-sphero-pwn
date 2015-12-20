@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "coffee-script": ">= 1.10.0",
+    "fs-promise": ">= 0.3.1",
     "noble": ">= 1.2.1",
     "serialport": ">= 2.0.5"
   },

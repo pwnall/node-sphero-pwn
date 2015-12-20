@@ -1,6 +1,6 @@
 Recording = require './recording.coffee'
 
-fs = require 'fs'
+fs = require 'fs-promise'
 
 # Implements the Channel API using data from a file.
 class ReplayChannel
@@ -13,6 +13,8 @@ class ReplayChannel
     @_recording = null
     @_index = 0
     @_readRecording()
+      .then =>
+        @_drainReads()
 
   # @see {Channel#write}
   write: (data) ->
@@ -40,7 +42,11 @@ class ReplayChannel
   onData: (data) ->
     return
 
-  # Closes the underlying communication channel.
+  # @see {Channel#onError}
+  onError: (error) ->
+    return
+
+  # @see {Channel#close}
   close: ->
     @_readRecording()
       .then =>
@@ -53,13 +59,9 @@ class ReplayChannel
   # @return {Promise<Boolean>} resolved to true when the recording file is
   #   read into memory
   _readRecording: ->
-    @_dataPromise ||= new Promise (resolve, reject) =>
-      fs.readFile @_recordingPath, encoding: 'utf8', (error, data) =>
-        if error
-          reject error
-          return
+    @_dataPromise ||= fs.readFile(@_recordingPath, encoding: 'utf8')
+      .then (data) =>
         @_recording = new Recording data
-        resolve true
 
   # @return {Promise<Boolean>} resolved to true when the next operation is a
   #   write or there is no operation left
@@ -69,11 +71,12 @@ class ReplayChannel
 
     new Promise (resolve, reject) =>
       data = @_recording.data @_index
+      @_index += 1
       try
         @onData data
       catch onDataError
         reject onDataError
-      @_index += 1
+        return
       resolve @_drainReads()
 
 

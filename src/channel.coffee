@@ -38,10 +38,15 @@ class Channel
           resolve true
 
   # Closes the underlying communication channel.
+  #
+  # @return {Promise<Boolean>} resolved with true when the channel is closed
   close: ->
-    @_port.close (error) =>
-      if error
-        @_onError error
+    new Promise (resolve, reject) =>
+      @_port.close (error) =>
+        if error
+          reject error
+        else
+          resolve true
 
   # Called when data is received from the robot.
   #

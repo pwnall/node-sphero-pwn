@@ -1,4 +1,4 @@
-fs = require 'fs'
+fs = require 'fs-promise'
 
 Recording = require './recording.coffee'
 
@@ -15,47 +15,43 @@ class ChannelRecorder
 
   # @see {Channel#onError}
   onError: (error) ->
-    null
+    return
+
+  # @see {Channel#onData}
+  onData: (data) ->
+    return
 
   # @see {Channel#write}
   write: (data) ->
     @_openFile()
-      .then (fd) ->
-        new Promise (resolve, reject) ->
-          fs.write fd, string, (error) ->
-            if error
-              reject error
-              return
-            fs.fsync fd, (error) ->
-              if error
-                reject error
-                return
-              resolve true
       .then =>
-        @_channel.write "> " + Recording.bufferToHex(@data) + "\n"
+        lineString = "> " + Recording.bufferToHex(data) + "\n"
+        fs.writeSync @_fd, lineString, 'utf8'
+        fs.fsyncSync @_fd
+        @_channel.write data
 
   # @see {Channel#close}
   close: ->
     @_openFile()
-      .then (fd) ->
-        fs.close (error) ->
-          if error
-            @_onError error
-            return
-          @_channel.close()
+      .then =>
+        @_channel.close()
+      .then =>
+        fs.closeSync @_fd unless @_fd is null
+        @_fd = null
 
   _onChannelData: (data) ->
+    @_openFile()
+      .then =>
+        lineString = "< " + Recording.bufferToHex(data) + "\n"
+        fs.writeSync @_fd, lineString, 'utf8'
+        fs.fsyncSync @_fd
+        @onData data
 
-  # @return {Promise<Integer>} resolved when the file is open, with a file
-  #   descriptor
+  # @return {Promise} resolved when the file is open
   _openFile: ->
-    @_openPromise ||= new Promise (resolve, reject) ->
-      fs.open @_recordingPath, 'w', (error, fd) ->
-        if error
-          reject error
-        else
-          resolve fd
-
+    @_openPromise ||= fs.open(@_recordingPath, 'w')
+      .then (fd) =>
+        @_fd = fd
 
 
 module.exports = ChannelRecorder
