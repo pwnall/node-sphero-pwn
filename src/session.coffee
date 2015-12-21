@@ -1,9 +1,10 @@
 Tokenizer = require './tokenizer.coffee'
 
-EventEmitter = require 'events'
-
 # Command-level API over a communication channel with a robot.
-class Session extends EventEmitter
+#
+# This is higher-level than the message-level API provided by {Channel}, but
+# lower-level than the {Robot} API.
+class Session
   constructor: (channel) ->
     @_channel = channel
     @_channel.onData = @_onChannelData.bind(@)
@@ -17,6 +18,7 @@ class Session extends EventEmitter
     @_lastSequence = 0
     @_resolves = new Array 256
     @_resolves[i] = null for i in [0...256]
+    @_asyncResolves = {}
 
 
   # Sends a command to the robot and receives its response.
@@ -37,6 +39,28 @@ class Session extends EventEmitter
         @_resolves[@_lastSequence] = null
         reject error
 
+  # Sends a command to the robot and receives its response and a notice.
+  #
+  # Some Sphero commands receive asynchronous messages, because the returned
+  # data is too large to fit into the response data structure. This pattern is
+  # common enough that it's worth coding to it.
+  #
+  # @param {Command} command the command to be sent to the robot; the command
+  #   will receive a sequence number and have its checksum recomputed
+  # @param {Number} asyncIdCode the ID code of the asynchronous message that
+  #   responds to this command
+  # @return {Promise<Object>} resolved with an obect that describes the
+  #   command's response;
+  sendAsyncCommand: (command, asyncIdCode) ->
+    new Promise (resolve, reject) =>
+      if @_asyncResolves[asyncIdCode]
+        reject new Error(
+            "Already waiting for async message with ID #{asyncIdCode}")
+        return
+      @_asyncResolves[asyncIdCode] = resolve
+
+
+
   # Closes the communication channel used by the session.
   #
   # @return {Promise} resolved when the channel is closed
@@ -51,7 +75,7 @@ class Session extends EventEmitter
       resolve response
     else
       @emit 'error', new Error(
-          "Received response with unknown sequence #{sequence}")
+          "Received response message with unknown sequence #{sequence}")
 
   # @see {Tokenizer#onAsync}
   _onTokenizerAsync: (async) ->

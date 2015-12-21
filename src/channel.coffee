@@ -18,8 +18,7 @@ class Channel
         { baudRate: baudRate, dataBits: 8, stopBits: 1,
         parser: serialport.parsers.raw }, false
     @_portOpenPromise = null
-    @_closed = false
-
+    @_portClosePromise = null
     @_openPort()
 
   # Queues up some binary data to be sent to the robot.
@@ -46,7 +45,7 @@ class Channel
   close: ->
     @_openPort()
       .then =>
-        new Promise (resolve, reject) =>
+        @_portClosePromise ||= new Promise (resolve, reject) =>
           @_port.close (error) =>
             if error
               reject error

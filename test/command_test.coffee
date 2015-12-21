@@ -22,7 +22,7 @@ describe 'Command', ->
       buffer = new Buffer [0xFF, 0xFF, 0x00, 0x01, 0x52, 0x01]
       expect(Command.checksum(buffer, 2, 6)).to.equal 0xAB
 
-  describe 'constructor', ->
+  describe '#constructor', ->
     it 'builds a ping correctly', ->
       command = new Command 0x00, 0x01, 0
       command.setSequence 0x52
@@ -40,6 +40,14 @@ describe 'Command', ->
 
     it 'builds a getUserConfig command correctly', ->
       command = new Command 0x02, 0x40, 1
-      command.buffer[6] = 0x01
+      command.setDataUint8 0, 0x01
       command.setSequence 0x52
       expect(command.buffer.toString('hex')).to.equal 'ffff024052020168'
+
+  describe '#setDataUint8', ->
+    it 'works correctly', ->
+      command = new Command 0xCC, 0xDD, 6
+      command.buffer.fill 0
+      command.setDataUint8 3, 0x42
+      expect(command.buffer.toString('hex')).to.
+         equal '00000000000000000042000000'

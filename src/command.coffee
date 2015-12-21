@@ -44,6 +44,16 @@ class Command
     @buffer[6 + @_dataLength] = Command.checksum @buffer, 2, 6 + @_dataLength
     @
 
+  # Sets a byte in the data buffer.
+  #
+  # @param {Number} offset the byte's offset in the data field of the command
+  #   buffer
+  # @param {Number} value the byte value to set
+  # @return {Command} this
+  setDataUint8: (offset, value) ->
+    @buffer.writeUInt8 value, offset + 6
+    @
+
   # Computes the checksum over a range of bytes in a buffer
   #
   # @param {Buffer} buffer
