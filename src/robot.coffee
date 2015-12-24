@@ -12,6 +12,8 @@ class Robot extends EventEmitter
   constructor: (channel) ->
     @_channel = channel
     @_session = new Session channel
+    @_session.onAsync = @_onAsync.bind(@)
+    @_session.onError = (error) => @emit 'error', error
 
   # Closes the underlying communication channel with the robot.
   #
@@ -195,5 +197,71 @@ class Robot extends EventEmitter
     @_session.sendCommand(command).then (response) ->
       true
 
+  # Aborts the currently running orBasic program.
+  #
+  # @return {Promise<Boolean>} resolved with true when the command completes
+  abortBasic: ->
+    command = new Command 0x02, 0x63, 0
+    @_session.sendCommand(command).then (response) ->
+      true
+
+  # Erases an orBasic program.
+  #
+  # @param {String} area the area storing the program; 'ram' or 'flash'
+  # @return {Promise<Boolean>} resolved with true when the command completes
+  eraseBasicArea: (area) ->
+    command = new Command 0x02, 0x60, 1
+    command.setDataUint8 0, Robot._basicAreaToCode(area)
+    @_session.sendCommand(command).then (response) ->
+      true
+
+  # Appends an orBasic program fragment to a storage area.
+  #
+  # @param {String} area the area storing the program; 'ram' or 'flash'
+  # @param {String} fragment the orBasic program fragment to be appended
+  # @return {Promise<Boolean>} resolved with true when the command completes
+  appendBasicToArea: (area, fragment) ->
+    command = new Command 0x02, 0x61, 1 + fragment.length
+    command.setDataUint8 0, Robot._basicAreaToCode(area)
+    command.setDataString 1, fragment
+    @_session.sendCommand(command).then (response) ->
+      true
+
+  # Executes the orBasic program in a storage area.
+  #
+  # @param {String} area the area storing the program; 'ram' or 'flash'
+  # @param {Number} startLine the line number where the execution should start
+  # @return {Promise<Boolean>} resolved with true when the command completes
+  executeBasic: (area, startLine) ->
+    command = new Command 0x02, 0x62, 3
+    command.setDataUint8 0, Robot._basicAreaToCode(area)
+    command.setDataUint16 1, startLine
+    @_session.sendCommand(command).then (response) ->
+      true
+
+  # Converts a developer-friendly orBasic storage area to a Sphero API code.
+  #
+  # @param {String} area an orBasic area; 'ram' or 'flash'
+  # @return {Number} the Sphero API code for the area
+  @_basicAreaToCode: (area) ->
+    switch area
+      when 'ram'
+        0
+      when 'flash'
+        1
+      else
+        area
+
+  # Called when an asynchronous message is received from the robot.
+  #
+  # @param {Object} async the asynchronous message
+  _onAsync: (async) ->
+    switch async.idCode
+      when 0x08
+        @emit 'basicPrint', async.data.toString('ascii')
+      when 0x09
+        @emit 'basicError', async.data.toString('ascii')
+      else
+        @emit 'async', async
 
 module.exports = Robot

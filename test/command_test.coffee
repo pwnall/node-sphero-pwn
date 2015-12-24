@@ -51,3 +51,27 @@ describe 'Command', ->
       command.setDataUint8 3, 0x42
       expect(command.buffer.toString('hex')).to.
          equal '00000000000000000042000000'
+
+  describe '#setDataUint16', ->
+    it 'works correctly', ->
+      command = new Command 0xCC, 0xDD, 8
+      command.buffer.fill 0
+      command.setDataUint16 3, 0xAABB
+      expect(command.buffer.toString('hex')).to.
+         equal '000000000000000000aabb00000000'
+
+  describe '#setDataUint32', ->
+    it 'works correctly', ->
+      command = new Command 0xCC, 0xDD, 8
+      command.buffer.fill 0
+      command.setDataUint32 3, 0xAABBEEFF
+      expect(command.buffer.toString('hex')).to.
+         equal '000000000000000000aabbeeff0000'
+
+  describe '#setDataString', ->
+    it 'works correctly', ->
+      command = new Command 0xCC, 0xDD, 8
+      command.buffer.fill 0
+      command.setDataString 3, 'Hello'
+      expect(command.buffer.toString('hex')).to.
+         equal '00000000000000000048656c6c6f00'
