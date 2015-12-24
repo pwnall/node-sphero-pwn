@@ -96,7 +96,6 @@ class Robot extends EventEmitter
   # @option flags {Boolean} lightDoubleTap
   # @option flags {Boolean} heavyDoubleTap
   # @option flags {Boolean} gyroMaxAsync
-  #
   # @return {Promise<Boolean>} resolved with true when the command completes
   setPermanentFlags: (flags) ->
     command = new Command 0x02, 0x35, 4
@@ -146,5 +145,55 @@ class Robot extends EventEmitter
     lightDoubleTap: 0x40
     heavyDoubleTap: 0x80
     gyroMaxAsync: 0x100
+
+  # Obtains the power level of the robot's back LED.
+  #
+  # @return {Promise<Number>} resolved with a value between 0 and 255
+  #   indicating the power level of the robot's back LED
+  getBackLed: ->
+    command = new Command 0x02, 0x22, 0
+    @_session.sendCommand(command).then (response) ->
+      response.data[0]
+
+  # Sets the power level of the robot's back LED.
+  #
+  # @param {Number} powerLevel the power level of the robot's back LED; 0 means
+  #   that the LED is turned off, and 255 sets the LED at the maximum
+  #   brightness
+  # @return {Promise<Boolean>} resolved with true when the command completes
+  setBackLed: (powerLevel) ->
+    command = new Command 0x02, 0x21, 1
+    command.setDataUint8 0, powerLevel
+    @_session.sendCommand(command).then (response) ->
+      true
+
+  # Obtains the color of the robot's RGB LED.
+  #
+  # @return {Promise<Object>} resolved with a value between 0 and 255
+  #   indicating the power level of the robot's back LED
+  getUserRgbLed: ->
+    command = new Command 0x02, 0x22, 0
+    @_session.sendCommand(command).then (response) ->
+      {
+        red: response.data[0], green: response.data[1],
+        blue: response.data[2]
+      }
+
+  # Sets the color of the robot's RGB LED.
+  #
+  # @param {Object} rgb the RGB components that make up the RGB LED color
+  # @option rgb {Number} red 0-255
+  # @option rgb {Number} green 0-255
+  # @option rgb {Number} blue 0-255
+  # @return {Promise<Boolean>} resolved with true when the command completes
+  setUserRgbLed: (rgb) ->
+    command = new Command 0x02, 0x20, 4
+    command.setDataUint8 0, rgb.red
+    command.setDataUint8 1, rgb.green
+    command.setDataUint8 2, rgb.blue
+    command.setDataUint8 3, 1
+    @_session.sendCommand(command).then (response) ->
+      true
+
 
 module.exports = Robot
