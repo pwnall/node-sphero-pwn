@@ -21,7 +21,9 @@ describe 'ChannelRecorder', ->
   it 'records a write correctly', ->
     @channel = new ReplayChannel testRecordingPath('synthetic-1write')
     @recorder = new ChannelRecorder @channel, @path
-    @recorder.write(new Buffer('Hello'))
+    @recorder.open()
+      .then =>
+        @recorder.write(new Buffer('Hello'))
       .then =>
         @recorder.close()
       .then =>
@@ -37,6 +39,7 @@ describe 'ChannelRecorder', ->
       @channel = new ReplayChannel testRecordingPath('synthetic-1read')
       @recorder = new ChannelRecorder @channel, @path
       @recorder.onData = (data) => resolve data
+      @recorder.open()
     ).then (data) =>
       expect(data).to.deep.equal new Buffer('world')
       @recorder.close()
@@ -51,22 +54,23 @@ describe 'ChannelRecorder', ->
   it 'reports a write-read-write-read correctly', ->
     @channel = new ReplayChannel testRecordingPath('synthetic-wrwr')
     @recorder = new ChannelRecorder @channel, @path
-
-    (new Promise (resolve, reject) =>
-      @recorder.onData = (data) => resolve data
-      @recorder.write(new Buffer('Hello')).catch (error) => reject error
-    ).then (data) =>
-      expect(data).to.deep.equal new Buffer('world')
-      new Promise (resolve, reject) =>
-        @recorder.onData = (data) => resolve data
-        @recorder.write(new Buffer('hai')).catch (error) => reject error
-     .then (data) =>
-      expect(data).to.deep.equal new Buffer('bai')
-      @recorder.close()
-     .then =>
-      fs.readFile @path, 'utf8'
-     .then (recording) =>
-      @recording = recording
-      fs.readFile testRecordingPath('synthetic-wrwr'), 'utf8'
-     .then (goldenRecording) =>
-      expect(@recording).to.equal goldenRecording
+    @recorder.open()
+      .then =>
+        new Promise (resolve, reject) =>
+          @recorder.onData = (data) => resolve data
+          @recorder.write(new Buffer('Hello')).catch (error) => reject error
+      .then (data) =>
+        expect(data).to.deep.equal new Buffer('world')
+        new Promise (resolve, reject) =>
+          @recorder.onData = (data) => resolve data
+          @recorder.write(new Buffer('hai')).catch (error) => reject error
+      .then (data) =>
+        expect(data).to.deep.equal new Buffer('bai')
+        @recorder.close()
+      .then =>
+        fs.readFile @path, 'utf8'
+      .then (recording) =>
+        @recording = recording
+        fs.readFile testRecordingPath('synthetic-wrwr'), 'utf8'
+      .then (goldenRecording) =>
+        expect(@recording).to.equal goldenRecording

@@ -4,6 +4,7 @@ describe 'ReplayChannel', ->
   describe 'with a 1-write recording', ->
     beforeEach ->
       @channel = new ReplayChannel testRecordingPath('synthetic-1write')
+      @channel.open()
 
     it 'accepts a correct write', ->
       @channel.write(new Buffer('Hello'))
@@ -33,6 +34,7 @@ describe 'ReplayChannel', ->
       @channel = new ReplayChannel testRecordingPath('synthetic-1read')
       @buffers = []
       @channel.onData = (data) => @buffers.push data
+      @channel.open()
 
     it 'reports the read data before closing', ->
       @channel.close()
@@ -44,6 +46,7 @@ describe 'ReplayChannel', ->
       (new Promise (resolve, reject) =>
         @channel = new ReplayChannel testRecordingPath('synthetic-1read')
         @channel.onData = (data) => resolve data
+        @channel.open()
       ).then (data) =>
         expect(data).to.deep.equal new Buffer('world')
         @channel.close()
@@ -51,6 +54,7 @@ describe 'ReplayChannel', ->
   describe 'with a write-read-write-read recording', ->
     beforeEach ->
       @channel = new ReplayChannel testRecordingPath('synthetic-wrwr')
+      @channel.open()
 
     it 'rejects an immediate close', ->
       @channel.close()
@@ -115,6 +119,7 @@ describe 'ReplayChannel', ->
   describe 'with a write-read-read-write-read-read recording', ->
     beforeEach ->
       @channel = new ReplayChannel testRecordingPath('synthetic-wrrwrr')
+      @channel.open()
 
     it 'reports reads right after writes', ->
       (new Promise (resolve, reject) =>

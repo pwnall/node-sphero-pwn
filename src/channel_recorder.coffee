@@ -4,35 +4,46 @@ Recording = require './recording.coffee'
 
 # Records all the bytes going to a channel.
 class ChannelRecorder
-  # @param {Channel} the channel being recorded
+  # @param {SerialChannel} the channel being recorded
   # @param {String} recordingPath the file where the recording will be saved
   constructor: (channel, recordingPath) ->
+    @sourceId = channel.sourceId
     @_channel = channel
     @_channel.onData = @_onChannelData.bind(@)
     @_recordingPath = recordingPath
     @_openPromise = null
     @_fd = null
 
-  # @see {Channel#onError}
+  # @see {SerialChannel#onError}
   onError: (error) ->
     return
 
-  # @see {Channel#onData}
+  # @see {SerialChannel#onData}
   onData: (data) ->
     return
 
-  # @see {Channel#write}
+  # @see {SerialChannel#sourceId}
+  sourceId: null
+
+  # @see {SerialChannel#open}
+  open: ->
+    @_openPromise ||= fs.open(@_recordingPath, 'w')
+      .then (fd) =>
+        @_fd = fd
+        @_channel.open()
+
+  # @see {SerialChannel#write}
   write: (data) ->
-    @_openFile()
+    @open()
       .then =>
         lineString = "> " + Recording.bufferToHex(data) + "\n"
         fs.writeSync @_fd, lineString, 'utf8'
         fs.fsyncSync @_fd
         @_channel.write data
 
-  # @see {Channel#close}
+  # @see {SerialChannel#close}
   close: ->
-    @_openFile()
+    @open()
       .then =>
         @_channel.close()
       .then =>
@@ -40,18 +51,12 @@ class ChannelRecorder
         @_fd = null
 
   _onChannelData: (data) ->
-    @_openFile()
+    @open()
       .then =>
         lineString = "< " + Recording.bufferToHex(data) + "\n"
         fs.writeSync @_fd, lineString, 'utf8'
         fs.fsyncSync @_fd
         @onData data
-
-  # @return {Promise} resolved when the file is open
-  _openFile: ->
-    @_openPromise ||= fs.open(@_recordingPath, 'w')
-      .then (fd) =>
-        @_fd = fd
 
 
 module.exports = ChannelRecorder

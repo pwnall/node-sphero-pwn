@@ -8,17 +8,22 @@ class ReplayChannel
   #
   # @param {String} recordingPath the file holding the recording to be replayed
   constructor: (recordingPath) ->
+    @sourceId = "replay://#{recordingPath}"
     @_recordingPath = recordingPath
-    @_dataPromise = null
     @_recording = null
     @_index = 0
-    @_readRecording()
-      .then =>
+    @_openPromise = null
+
+  # @see {SerialChannel#open}
+  open: ->
+    @_openPromise ||= fs.readFile(@_recordingPath, encoding: 'utf8')
+      .then (data) =>
+        @_recording = new Recording data
         @_drainReads()
 
-  # @see {Channel#write}
+  # @see {SerialChannel#write}
   write: (data) ->
-    @_readRecording()
+    @open()
       .then =>
         @_drainReads()
       .then =>
@@ -38,30 +43,26 @@ class ReplayChannel
 
         true
 
-  # @see {Channel#onData}
+  # @see {SerialChannel#onData}
   onData: (data) ->
     return
 
-  # @see {Channel#onError}
+  # @see {SerialChannel#onError}
   onError: (error) ->
     return
 
-  # @see {Channel#close}
+  # @see {SerialChannel#sourceId}
+  sourceId: null
+
+  # @see {SerialChannel#close}
   close: ->
-    @_readRecording()
+    @open()
       .then =>
         @_drainReads()
       .then =>
         opsLeft = @_recording.length - @_index
         if opsLeft isnt 0
           throw new Error("Closed before performing #{opsLeft} remaining ops")
-
-  # @return {Promise<Boolean>} resolved to true when the recording file is
-  #   read into memory
-  _readRecording: ->
-    @_dataPromise ||= fs.readFile(@_recordingPath, encoding: 'utf8')
-      .then (data) =>
-        @_recording = new Recording data
 
   # @return {Promise<Boolean>} resolved to true when the next operation is a
   #   write or there is no operation left

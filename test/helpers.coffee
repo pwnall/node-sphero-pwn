@@ -35,7 +35,10 @@ global.testRecordingChannel = (recordingName) ->
   recordingPath = testRecordingPath recordingName
   fs.stat(recordingPath)
     .then ->
-      new SpheroPwn.ReplayChannel recordingPath
+      channel = new SpheroPwn.ReplayChannel(recordingPath)
+      channel.open().then -> channel
     .catch (error) ->
-      channel = new SpheroPwn.Channel process.env['SPHERO_DEV']
-      new SpheroPwn.ChannelRecorder channel, recordingPath
+      SpheroPwn.Discovery.find(process.env['SPHERO_DEV'])
+        .then (channel) ->
+          recorder = new SpheroPwn.ChannelRecorder channel, recordingPath
+          recorder.open().then -> recorder
