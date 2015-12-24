@@ -226,6 +226,8 @@ class Robot extends EventEmitter
   # @param {String} fragment the orBasic program fragment to be appended
   # @return {Promise<Boolean>} resolved with true when the command completes
   loadBasic: (area, program) ->
+    program += "\0" unless program.endsWith("\0")
+
     offset = 0
     loadNextFragment = =>
       length = program.length - offset
@@ -288,5 +290,6 @@ class Robot extends EventEmitter
         @emit 'basicError', async.data.toString('ascii')
       else
         @emit 'async', async
+
 
 module.exports = Robot

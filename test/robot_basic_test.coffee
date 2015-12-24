@@ -54,7 +54,6 @@ describe 'Robot', ->
       for i in [1..30]
         basic += "#{i}0 print \"Hello from Basic line #{i}0\"\n"
         basic += "#{i}5 end\n"
-      basic += "\n"
 
       @robot.on 'basicError', (error) => console.error error
       @robot.abortBasic()
