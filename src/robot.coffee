@@ -205,7 +205,42 @@ class Robot extends EventEmitter
     @_session.sendCommand(command).then (response) ->
       true
 
+  # Executes the orBasic program in a storage area.
+  #
+  # @param {String} area the area storing the program; 'ram' or 'flash'
+  # @param {Number} startLine the line number where the execution should start
+  # @return {Promise<Boolean>} resolved with true when the command completes
+  executeBasic: (area, startLine) ->
+    command = new Command 0x02, 0x62, 3
+    command.setDataUint8 0, Robot._basicAreaToCode(area)
+    command.setDataUint16 1, startLine
+    @_session.sendCommand(command).then (response) ->
+      true
+
+  # Loads an orBasic program into a storage area.
+  #
+  # This is a convenience wrapper around the {Robot#eraseBasicArea} and
+  # {Robot#appendBasicToArea} primitives.
+  #
+  # @param {String} area the area storing the program; 'ram' or 'flash'
+  # @param {String} fragment the orBasic program fragment to be appended
+  # @return {Promise<Boolean>} resolved with true when the command completes
+  loadBasic: (area, program) ->
+    offset = 0
+    loadNextFragment = =>
+      length = program.length - offset
+      length = 253 if length > 253
+      if length is 0
+        return Promise.resolve true
+      @appendBasicToArea(area, program.substring(offset, offset + length))
+        .then ->
+          offset += length
+          loadNextFragment()
+    @eraseBasicArea(area).then loadNextFragment
+
   # Erases an orBasic program.
+  #
+  # This is a primitive operation used by {Robot#loadBasic}.
   #
   # @param {String} area the area storing the program; 'ram' or 'flash'
   # @return {Promise<Boolean>} resolved with true when the command completes
@@ -217,6 +252,8 @@ class Robot extends EventEmitter
 
   # Appends an orBasic program fragment to a storage area.
   #
+  # This is a primitive operation used by {Robot#loadBasic}.
+  #
   # @param {String} area the area storing the program; 'ram' or 'flash'
   # @param {String} fragment the orBasic program fragment to be appended
   # @return {Promise<Boolean>} resolved with true when the command completes
@@ -224,18 +261,6 @@ class Robot extends EventEmitter
     command = new Command 0x02, 0x61, 1 + fragment.length
     command.setDataUint8 0, Robot._basicAreaToCode(area)
     command.setDataString 1, fragment
-    @_session.sendCommand(command).then (response) ->
-      true
-
-  # Executes the orBasic program in a storage area.
-  #
-  # @param {String} area the area storing the program; 'ram' or 'flash'
-  # @param {Number} startLine the line number where the execution should start
-  # @return {Promise<Boolean>} resolved with true when the command completes
-  executeBasic: (area, startLine) ->
-    command = new Command 0x02, 0x62, 3
-    command.setDataUint8 0, Robot._basicAreaToCode(area)
-    command.setDataUint16 1, startLine
     @_session.sendCommand(command).then (response) ->
       true
 
