@@ -31,6 +31,39 @@ class Robot extends EventEmitter
     @_session.sendCommand(command).then (response) ->
       true
 
+  # Returns the versions of the components in the robot's software stack.
+  #
+  # @return {Promise<Object>} resolved with the versions in the robot's
+  #   software stack
+  getVersions: ->
+    command = new Command 0x00, 0x02, 0
+    @_session.sendCommand(command).then (response) ->
+      Robot._versionsFromData response.data
+
+  # Parses software stack versions from an API response.
+  #
+  # @param {Buffer} data the data field in the API response
+  # @return {Object} parsed version numbers
+  @_versionsFromData: (data) ->
+    responseVersion = data[0]
+    versions = {}
+    parseNibbles = (byte) ->
+      major: (byte >> 4), minor: (byte & 0x0F)
+    if responseVersion >= 1
+      versions.model = data[1]
+      versions.hardware = data[2]
+      versions.spheroApp =
+        version: data[3]
+        revision: data[4]
+      versions.bootloader = parseNibbles data[5]
+      versions.basic = parseNibbles data[6]
+      versions.macros = parseNibbles data[7]
+    if responseVersion >= 2
+      versions.api =
+        major: data[8]
+        minor: data[9]
+    versions
+
   # Obtains the robot's hackability.
   #
   # @return {Promise<String>} resolved with a string describing the device's
