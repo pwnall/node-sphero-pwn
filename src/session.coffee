@@ -8,12 +8,13 @@ class Session
   constructor: (channel) ->
     @_channel = channel
     @_channel.onData = @_onChannelData.bind(@)
-    @_channel.onError = @_onChannelError.bind(@)
+    @_channel.onError = (error) => @onError error
     @_channel.onClose = @_onChannelClose.bind(@)
 
     @_tokenizer = new Tokenizer
     @_tokenizer.onResponse = @_onTokenizerResponse.bind(@)
     @_tokenizer.onAsync = @_onTokenizerAsync.bind(@)
+    @_tokenizer.onError = (error) => @onError error
 
     @_lastSequence = 0
     @_resolves = new Array 256
@@ -59,13 +60,18 @@ class Session
         return
       @_asyncResolves[asyncIdCode] = resolve
 
-
-
   # Closes the communication channel used by the session.
   #
   # @return {Promise} resolved when the channel is closed
   close: ->
     @_channel.close()
+
+
+  # Called when an error is encountered while communicating with the robot.
+  #
+  # @param {Error} error the error encountered
+  onError: (error) ->
+    return
 
   # @see {Tokenizer#onResponse}
   _onTokenizerResponse: (response) ->
@@ -74,20 +80,17 @@ class Session
       @_resolves[sequence] = null
       resolve response
     else
-      @emit 'error', new Error(
+      @onError new Error(
           "Received response message with unknown sequence #{sequence}")
 
   # @see {Tokenizer#onAsync}
   _onTokenizerAsync: (async) ->
-    @emit 'async', async
+    # TODO(pwnall): filter async
+    @onAsync async
 
   # @see {Channel#onData}
   _onChannelData: (data) ->
     @_tokenizer.consume data
-
-  # @see {Channel#error}
-  _onChannelError: (error) ->
-    @emit 'error', error
 
   # @see {Channel#close}
   _onChannelClose: ->

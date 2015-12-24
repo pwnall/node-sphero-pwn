@@ -159,7 +159,7 @@ module.exports = class Tokenizer
   #
   # @param {Number} dataSize the number of data bytes expected
   _newDataBuffer: (dataSize) ->
-    @_data = new Uint8Array dataSize
+    @_data = new Buffer dataSize
     @_dataLeft = dataSize
     @_dataOffset = 0
     return

@@ -54,6 +54,19 @@ class Command
     @buffer.writeUInt8 value, offset + 6
     @
 
+  # Sets a 32-bit unsigned integer in the data buffer.
+  #
+  # The integer is assumed to be big-endian, as that is the standard Sphero API
+  # format.
+  #
+  # @param {Number} offset the integer's offset in the data field of the
+  #   command buffer
+  # @param {Number} value the 32-bit unsigned integer value to set
+  # @return {Command} this
+  setDataUint32: (offset, value) ->
+    @buffer.writeUInt32BE value, offset + 6
+    @
+
   # Computes the checksum over a range of bytes in a buffer
   #
   # @param {Buffer} buffer

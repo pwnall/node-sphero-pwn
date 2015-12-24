@@ -38,6 +38,6 @@
   },
   "scripts": {
     "start": "node lib/boot.js",
-    "test": "node node_modules/mocha/bin/mocha --compilers coffee:coffee-script/register --timeout 5000 --require test/helpers.coffee"
+    "test": "node node_modules/mocha/bin/mocha --compilers coffee:coffee-script/register --timeout 60000 --require test/helpers.coffee"
   }
 }
