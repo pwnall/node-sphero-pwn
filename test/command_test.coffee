@@ -75,3 +75,12 @@ describe 'Command', ->
       command.setDataString 3, 'Hello'
       expect(command.buffer.toString('hex')).to.
          equal '00000000000000000048656c6c6f00'
+
+  describe '#setDataBytes', ->
+    it 'works correctly', ->
+      command = new Command 0xCC, 0xDD, 8
+      command.buffer.fill 0
+      command.setDataBytes 3, new Buffer([0xAA, 0xBB, 0xEE])
+      expect(command.buffer.toString('hex')).to.
+         equal '000000000000000000aabbee000000'
+

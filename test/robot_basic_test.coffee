@@ -30,10 +30,10 @@ describe 'Robot', ->
           expect(result).to.equal true
           new Promise (resolve, reject) =>
             @robot.executeBasic 'ram', 10
-            @robot.on 'basicPrint', (message) ->
-              resolve message
-        .then (message) =>
-          expect(message).to.equal "Hello from Basic\n"
+            @robot.on 'basicPrint', (event) ->
+              resolve event
+        .then (event) =>
+          expect(event).to.deep.equal message: "Hello from Basic\n"
 
   describe '#loadBasic', ->
     beforeEach ->
@@ -63,7 +63,7 @@ describe 'Robot', ->
           expect(result).to.equal true
           new Promise (resolve, reject) =>
             @robot.executeBasic 'ram', 240
-            @robot.on 'basicPrint', (message) ->
-              resolve message
-        .then (message) =>
-          expect(message).to.equal "Hello from Basic line 240\n"
+            @robot.on 'basicPrint', (event) ->
+              resolve event
+        .then (event) =>
+          expect(event).to.deep.equal message: "Hello from Basic line 240\n"

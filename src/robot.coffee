@@ -230,6 +230,96 @@ class Robot extends EventEmitter
     @_session.sendCommand(command).then (response) ->
       true
 
+  # Reinitializes the macro executive.
+  #
+  # This aborts the currently running macro and removes all user macros from
+  # memory.
+  #
+  # @return {Promise<Boolean>} resolved with true when the command completes
+  resetMacros: ->
+    command = new Command 0x02, 0x54, 0
+    @_session.sendCommand(command).then (response) ->
+      true
+
+  # Obtains information about the currently running macro.
+  #
+  # @return {Promise<Object?>} resolved with information about the currently
+  #   running macro; the object has two keys, 'macroId' and 'commandId'; the
+  #   object can be null if no macro is running
+  getMacroStatus: ->
+    command = new Command 0x02, 0x56, 0
+    @_session.sendCommand(command).then (response) ->
+      Robot._macroStatusFromData response.data
+
+  # Converts a Sphero API response to developer-friendly macro status data.
+  #
+  # @param {Buffer} data the Sphero API response
+  # @return {Object?<String, Number>} object with two keys, 'macroId' and
+  #   'commandId'
+  @_macroStatusFromData: (data) ->
+    macroId = data[0]
+    commandId = data.readUInt16BE 1
+    if macroId is 0
+      null
+    else
+      if macroId < 32
+        type = 'system'
+      else if macroId is 0xFE
+        type = 'streaming'
+      else if macroId is 0xFF
+        type = 'temporary'
+      else
+        type = 'user'
+      { macroId: macroId, commandId: commandId, type: type  }
+
+  # Obtains information about the currently running macro.
+  #
+  # @return {Promise<Object?>} resolves to information about the aborted macro;
+  #   the object has two keys, 'macroId' and 'commandId'
+  abortMacro: ->
+    command = new Command 0x02, 0x55, 0
+    @_session.sendCommand(command).then (response) ->
+      status = Robot._macroStatusFromData response.data
+      return status if status is null
+
+      if status.commandId is 0xFFFF
+        # TODO(pwnall): come up with a better way to point out system macros
+        status.aborted = false
+      else
+        status.aborted = true
+      status
+
+  # Stores a macro in the robot's memory.
+  #
+  # @param {Number} macroId the macro's ID number; 255 is the temporary macro,
+  #   254 is the streaming macro, and 0-31 are system macros
+  # @param {Buffer} macroBytes the compiled macro's contents
+  # @return {Promise<Boolean>} resolves to true when the command completes
+  setMacro: (macroId, macroBytes) ->
+    if macroId is 0xFF
+      commandId = 0x51  # Save temporary macro.
+      macroId = 0
+    else
+      commandId = 0x52  # Save macro.
+    command = new Command 0x02, commandId, 1 + macroBytes.length
+    command.setDataUint8 0, macroId
+    command.setDataBytes 1, macroBytes
+    @_session.sendCommand(command).then (response) ->
+      true
+
+  # Runs a macro.
+  #
+  # @param {Number} macroId the macro's ID number; 0-31 are system macros,
+  #   32-253 are user-persistent macros, 254 is the streaming macro, and 255
+  #   is the temporary macro
+  # @return {Promise<Boolean>} resolves to true when the macro has been queued
+  #   for execution
+  runMacro: (macroId) ->
+    command = new Command 0x02, 0x50, 1
+    command.setDataUint8 0, macroId
+    @_session.sendCommand(command).then (response) ->
+      true
+
   # Aborts the currently running orBasic program.
   #
   # @return {Promise<Boolean>} resolved with true when the command completes
@@ -317,10 +407,17 @@ class Robot extends EventEmitter
   # @param {Object} async the asynchronous message
   _onAsync: (async) ->
     switch async.idCode
+      when 0x06
+        event =
+          markerId: async.data[0], macroId: async.data[1],
+          commandId: async.data.readUInt16BE(2)
+        @emit 'macro', event
       when 0x08
-        @emit 'basicPrint', async.data.toString('ascii')
+        event = { message: async.data.toString('ascii') }
+        @emit 'basicPrint', event
       when 0x09
-        @emit 'basicError', async.data.toString('ascii')
+        event = { message: async.data.toString('ascii') }
+        @emit 'basicError', event
       else
         @emit 'async', async
 

@@ -90,6 +90,16 @@ class Command
     @buffer.write value, offset + 6, value.length, 'utf8'
     @
 
+  # Sets a sequence of bytes in the data buffer.
+  #
+  # @param {Number} offset the offset of the sequence's first byte in the data
+  #   field of the command buffer
+  # @param {Buffer} value the sequence of bytes to be set
+  # @return {Command} this
+  setDataBytes: (offset, value) ->
+    value.copy @buffer, offset + 6
+    @
+
   # Computes the checksum over a range of bytes in a buffer
   #
   # @param {Buffer} buffer
