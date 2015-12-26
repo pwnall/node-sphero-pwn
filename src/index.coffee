@@ -4,6 +4,7 @@ SpheroPwn =
   ChannelRecorder: require('./channel_recorder.coffee')
   Command: require('./command.coffee')
   Discovery: require('./discovery.coffee')
+  Macro: require('./macro.coffee')
   Recording: require('./recording.coffee')
   ReplayChannel: require('./replay_channel.coffee')
   Robot: require('./robot.coffee')

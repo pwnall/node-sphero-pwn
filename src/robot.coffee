@@ -272,7 +272,7 @@ class Robot extends EventEmitter
         type = 'user'
       { macroId: macroId, commandId: commandId, type: type  }
 
-  # Obtains information about the currently running macro.
+  # Stops the currently running macro.
   #
   # @return {Promise<Object?>} resolves to information about the aborted macro;
   #   the object has two keys, 'macroId' and 'commandId'
