@@ -168,7 +168,7 @@ MacroCommands =
       name: 'duration'
       type: 'uint16', min: 0, max: 0xFFFF
     }]
-    pcd: true
+    pcd: false
   }
 
   # Emit Marker
@@ -217,10 +217,7 @@ MacroCommands =
   # Loop End
   endrepeat: {
     byteCode: 0x1F
-    args: [{
-      name: 'count'
-      type: 'uint8', min: 0, max: 0xFF
-    }]
+    args: []
     pcd: false
   }
 
