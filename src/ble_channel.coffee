@@ -20,15 +20,27 @@ class BleChannel
 
   # @see {SerialChannel#write}
   write: (data) =>
+    console.log 'write called'
     @open()
       .then =>
-        new Promise (resolve, reject) =>
-          @_characteristics.robot.commands.write data, false, (error) =>
-            if error
-              reject error
-            else
-              resolve true
+        offset = 0
+        writeChunk = =>
+          if offset >= data.length
+            return Promise.resolve true
 
+          (new Promise (resolve, reject) =>
+            length = data.length - offset
+            length = 20 if length > 20
+            chunk = data.slice offset, offset + length
+            @_characteristics.robot.commands.write chunk, true, (error) =>
+              if error
+                reject error
+              else
+                offset += length
+                resolve true
+          ).then =>
+            writeChunk()
+        writeChunk()
   # @see {SerialChannel#close}
   close: ->
     @open()
@@ -219,8 +231,10 @@ class BleChannel
   #   of the radio service
   @_characteristicUuids:
     radio:
-      '22bb746f2bbd75542d6f726568705327': 'antiDos'
       '22bb746f2bb275542d6f726568705327': 'txPower'
+      '22bb746f2bb775542d6f726568705327': 'deepSleep'
+      '22bb746f2bbd75542d6f726568705327': 'antiDos'
+      '22bb746f2bbe75542d6f726568705327': 'antiDosTimeout'
       '22bb746f2bbf75542d6f726568705327': 'wakeCpu'
     robot:
       '22bb746f2ba175542d6f726568705327': 'commands'

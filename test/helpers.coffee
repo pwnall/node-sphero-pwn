@@ -38,7 +38,7 @@ global.testRecordingChannel = (recordingName) ->
       channel = new SpheroPwn.ReplayChannel(recordingPath)
       channel.open().then -> channel
     .catch (error) ->
-      SpheroPwn.Discovery.find(process.env['SPHERO_DEV'])
+      SpheroPwn.Discovery.findChannel(process.env['SPHERO_DEV'])
         .then (channel) ->
           recorder = new SpheroPwn.ChannelRecorder channel, recordingPath
           recorder.open().then -> recorder
