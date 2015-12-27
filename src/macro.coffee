@@ -1,7 +1,12 @@
+MacroCommands = require './macro_commands.coffee'
+MacroFlags = require './macro_flags.coffee'
+
 # Compiles macros for Sphero robots.
 class Macro
   # @return {Object<String, Number>} maps label names to command numbers
   labels: null
+
+  # @return {Array<Number>} the bytes that make up the compiled macro
   bytes: null
 
   # Creates an empty macro.
@@ -12,6 +17,8 @@ class Macro
     @labels = {}
     @bytes = [0x00]
     @_endsWithPcd = false
+    @_flagValues = {}
+    @_varValues = {}
 
   # Extends the macro with a command.
   #
@@ -26,7 +33,7 @@ class Macro
     errorStart = "Line #{opcode.line}:"
 
     name = opcode.value
-    commandData = Macro._commands[name]
+    commandData = MacroCommands[name]
     unless commandData
       return "#{errorStart} invalid command opcode #{opcode.value}"
 
@@ -40,6 +47,13 @@ class Macro
     for commandArg, index in commandData.args
       argName = commandArg.name
       argToken = args[index]
+
+      # NOTE: Variable substitution must be done before builtin evaluation.
+      if argToken.type is 'var'
+        if argToken.value of @_varValues
+          argToken = @_varValues[argToken.value]
+        else
+          return "Line #{argToken.line}: undefined variable #{argToken.value}"
 
       switch argToken.type
         when 'number'
@@ -71,6 +85,16 @@ class Macro
         when 'uint16'
           bytes.push value >> 8
           bytes.push value & 0xFF
+        when 'sint16'
+          value = 0x10000 + value if value < 0
+          bytes.push value >> 8
+          bytes.push value & 0xFF
+        when 'bytecode'
+          if value of commandArg.byteCodes
+            bytes[0] = commandArg.byteCodes[value]
+          else
+            return "#{errorStart} #{argName} does not accept value " +
+                argToken.value
         else
           throw new Error("Unimplemented argument type #{commandArg.type}")
     if commandData.pcd
@@ -83,6 +107,8 @@ class Macro
       @bytes[@bytes.length - 1] = bytes[2]
       bytes = []
 
+    # TODO(pwnall): roll+delay -> roll2 optimization
+
     @_endsWithPcd = commandData.pcd
     unless bytes.length is 0
       @_opOffsets.push @bytes.length
@@ -90,121 +116,73 @@ class Macro
 
     null
 
-  # Command information used by the macro code generator.
-  @_commands = {
-    end: { byteCode: 0x00, args: [], pcd: false }
-    stabilization: {
-      byteCode: 0x03
-      args: [{
-        name: 'flag'
-        type: 'uint8', min: 0, max: 2
-        builtins: { off: 0, reset_on: 1, on: 2 }
-      }]
-      pcd: true
-    }
-    heading: {
-      byteCode: 0x04
-      args: [{
-        name: 'heading'
-        type: 'uint16', min: 0, max: 359
-      }]
-      pcd: true
-    }
-    roll: {
-      byteCode: 0x05
-      args: [{
-        name: 'speed',
-        type: 'uint8', min: 0, max: 0xFF
-      }, {
-        name: 'heading'
-        type: 'uint16', min: 0, max: 359
-      }]
-      pcd: true
-    }
-    rgb: {
-      byteCode: 0x07
-      args: [{
-        name: 'red',
-        type: 'uint8', min: 0, max: 0xFF
-      }, {
-        name: 'green',
-        type: 'uint8', min: 0, max: 0xFF
-      }, {
-        name: 'blue',
-        type: 'uint8', min: 0, max: 0xFF
-      }]
-      pcd: true
-    }
-    backled: {
-      byteCode: 0x09
-      args: [{
-        name: 'intensity',
-        type: 'uint8', min: 0, max: 0xFF
-      }]
-      pcd: true
-    }
-    motor: {
-      byteCode: 0x0A
-      args: [{
-        name: 'leftMode',
-        type: 'uint8', min: 0, max: 4
-        builtins: { off: 0, forward: 1, reverse: 2, brake: 3, ignore: 4 }
-      }, {
-        name: 'leftPower',
-        type: 'uint8', min: 0, max: 255
-      }, {
-        name: 'rightMode',
-        type: 'uint8', min: 0, max: 4
-        builtins: { off: 0, forward: 1, reverse: 2, brake: 3, ignore: 4 }
-      }, {
-        name: 'rightPower',
-        type: 'uint8', min: 0, max: 255
-      }]
-      pcd: true
-    }
-    delay: {
-      byteCode: 0x0B
-      args: [{
-        name: 'time',
-        type: 'uint16', min: 0, max: 0xFFFF
-      }]
-      pcd: false
-    }
-    rgbfade: {
-      byteCode: 0x14
-      args: [{
-        name: 'red',
-        type: 'uint8', min: 0, max: 0xFF
-      }, {
-        name: 'green',
-        type: 'uint8', min: 0, max: 0xFF
-      }, {
-        name: 'blue',
-        type: 'uint8', min: 0, max: 0xFF
-      }, {
-        name: 'duration',
-        type: 'uint16', min: 0, max: 0xFFFF
-      }]
-      pcd: true
-    }
-    marker: {
-      byteCode: 0x15
-      args: [{
-        name: 'value',
-        type: 'uint8', min: 0, max: 0xFF
-      }]
-      pcd: false
-    }
-    speed: {
-      byteCode: 0x25
-      args: [{
-        name: 'speed',
-        type: 'uint8', min: 0, max: 0xFF
-      }]
-      pcd: true
-    }
+  # Sets the value of a macro flag.
+  #
+  # @param {Token} name the lexed token containing the flag's name
+  # @param {Token} value the lexed token containing the flag's value
+  # @return {String?} if not null, it represents an error message
+  setFlag: (name, value) ->
+    if name.type isnt 'var'
+      return "Line #{name.line}: invalid flag name type #{name.type}"
 
-  }
+    flagName = name.value.substring 1
+    unless flagMask = MacroFlags[flagName]
+      return "Line #{name.line}: unknown flag name #{name.value}"
+
+    flagValue = null
+    switch value.type
+      when 'builtin'
+        if value.value is ':on'
+          flagValue = true
+        else if value.value is ':off'
+          flagValue = false
+      when 'number'
+        if value.value is 1
+          flagValue = true
+        else if value.value is 0
+          flagValue = false
+      else
+        return "Line #{value.line}: invalid flag value type #{value.type}"
+
+    if flagValue is null
+      return "Line #{value.line}: invalid flag value #{value.value}"
+
+    if oldValue = @_flagValues[flagName]
+      return "Line #{value.line}: flag #{name.value} already set to " +
+             "#{oldValue.value} on line #{oldValue.line}"
+    @_flagValues[flagName] = value
+
+    if flagValue is true
+      @bytes[0] |= flagMask
+
+    null
+
+  # Sets the value of a variable.
+  #
+  # @param {Token} name the lexed token containing the flag's name
+  # @param {Token} value the lexed token containing the flag's value
+  # @return {String?} if not null, it represents an error message
+  setVariable: (name, value) ->
+    if name.type isnt 'var'
+      return "Line #{name.line}: invalid variable name type #{name.type}"
+    varName = name.value
+
+    varValue = null
+    switch value.type
+      when 'number'
+        varValue = value
+      when 'builtin'
+        varValue = value
+      when 'var'
+        if value.value of @_varValues
+          varValue = @_varValues[value.value]
+        else
+          return "Line #{value.line}: undefined variable #{value.value}"
+      else
+        return "Line #{value.line}: invalid variable value type #{value.type}"
+    @_varValues[varName] = varValue
+
+    null
 
   # Compiles a macro.
   #
@@ -231,7 +209,7 @@ class Macro
     error = Macro._parse ops, tokens
     return error if error isnt null
 
-    Macro._codeGen macro, ops
+    Macro._generateCode macro, ops
 
   # Breaks down a macro's source code into pieces.
   #
@@ -266,12 +244,15 @@ class Macro
       token = type: 'label', value: match[0]
     else if match = /^:\w+/.exec(line)  # Built-in constant.
       token = type: 'builtin', value: match[0]
-    else if match = /^\$\w+/.exec(line)  # Constant.
-      token = type: 'const', name: match[0], value: null
-    else if match = /^\d+/.exec(line)  # Number
+    else if match = /^\$\w+/.exec(line)  # Variable.
+      token = type: 'var', value: match[0]
+    else if match = /^-?\d+/.exec(line)  # Number
       token = type: 'number', value: parseInt(match[0])
     else if match = /^\w+/.exec(line)  # Opcode
-      token = type: 'opcode', value: match[0]
+      if match[0] of @_keywords
+        token = type: 'keyword', value: match[0]
+      else
+        token = type: 'opcode', value: match[0]
     else
       return "Line #{lineNumber}: invalid token #{line}"
 
@@ -281,6 +262,10 @@ class Macro
 
     @_lexLine tokenBucket, line.substring(match[0].length), lineNumber
 
+  # List of keywords.
+  @_keywords:
+    let: true
+    flag: true
 
   # Parses a sequence of macro code tokens into operations.
   #
@@ -301,22 +286,43 @@ class Macro
         while i < tokens.length and tokens[i].line is token.line
           argToken = tokens[i]
           i += 1
-          if argToken.type is 'opcode'
-            return "Line #{argToken.line}: cannot have second opcode " +
+          if argToken.type is 'opcode' or argToken.type is 'keyword'
+            return "Line #{argToken.line}: cannot have #{argToken.type} " +
                    "#{argToken.value} on the same line as #{token.value}"
           args.push argToken
         continue
+      if token.type is 'keyword'
+        switch token.value
+          when 'flag', 'let'
+            unless i < tokens.length
+              construct = if token.value is 'flag' then 'flag' else 'variable'
+              return "Line #{token.line}: missing #{construct} name"
+            nameToken = tokens[i]
+            i += 1
+            unless i < tokens.length
+              construct = if token.value is 'flag' then 'flag' else 'variable'
+              return "Line #{token.line}: missing value for #{construct} " +
+                     nameToken.value
+            valueToken = tokens[i]
+            i += 1
+            opBucket.push op: token.value, name: nameToken, value: valueToken
+        continue
+
       return "Line #{token.line}: unexpected #{token.type} token #{token.value}"
     null
 
   # Generates the code for a sequence of operations.
   #
   # @param {Macro} macro the macro that will receive the codes
-  @_codeGen: (macro, ops) ->
+  @_generateCode: (macro, ops) ->
     for op in ops
       switch op.op
         when 'command'
           error = macro.addCommand op.opcode, op.args
+        when 'flag'
+          error = macro.setFlag op.name, op.value
+        when 'let'
+          error = macro.setVariable op.name, op.value
       return error if error isnt null
     null
 

@@ -54,7 +54,7 @@ class DiscoveryClass extends EventEmitter
   #   desired robot
   # @return {Promise<Channel>} resolved with a communication channel to the
   #   desired robot
-  find: (sourceId) ->
+  findChannel: (sourceId) ->
     new Promise (resolve, reject) =>
       @stop()
       @reset()

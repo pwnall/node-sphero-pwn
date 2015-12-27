@@ -181,15 +181,6 @@ class Robot extends EventEmitter
     heavyDoubleTap: 0x80
     gyroMaxAsync: 0x100
 
-  # Obtains the power level of the robot's back LED.
-  #
-  # @return {Promise<Number>} resolved with a value between 0 and 255
-  #   indicating the power level of the robot's back LED
-  getBackLed: ->
-    command = new Command 0x02, 0x22, 0
-    @_session.sendCommand(command).then (response) ->
-      response.data[0]
-
   # Sets the power level of the robot's back LED.
   #
   # @param {Number} powerLevel the power level of the robot's back LED; 0 means
