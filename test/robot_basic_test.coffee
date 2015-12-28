@@ -29,8 +29,8 @@ describe 'Robot', ->
         .then (result) =>
           expect(result).to.equal true
           new Promise (resolve, reject) =>
-            @robot.executeBasic 'ram', 10
-            @robot.on 'basicPrint', (event) ->
+            @robot.runBasic 'ram', 10
+            @robot.on 'basic', (event) ->
               resolve event
         .then (event) =>
           expect(event).to.deep.equal message: "Hello from Basic\n"
@@ -62,8 +62,8 @@ describe 'Robot', ->
         .then (result) =>
           expect(result).to.equal true
           new Promise (resolve, reject) =>
-            @robot.executeBasic 'ram', 240
-            @robot.on 'basicPrint', (event) ->
+            @robot.runBasic 'ram', 240
+            @robot.on 'basic', (event) ->
               resolve event
         .then (event) =>
           expect(event).to.deep.equal message: "Hello from Basic line 240\n"

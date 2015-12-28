@@ -311,7 +311,7 @@ class Robot extends EventEmitter
     @_session.sendCommand(command).then (response) ->
       true
 
-  # Aborts the currently running orBasic program.
+  # Aborts the currently running orbBasic program.
   #
   # @return {Promise<Boolean>} resolved with true when the command completes
   abortBasic: ->
@@ -319,25 +319,25 @@ class Robot extends EventEmitter
     @_session.sendCommand(command).then (response) ->
       true
 
-  # Executes the orBasic program in a storage area.
+  # Executes the orbBasic program in a storage area.
   #
   # @param {String} area the area storing the program; 'ram' or 'flash'
   # @param {Number} startLine the line number where the execution should start
   # @return {Promise<Boolean>} resolved with true when the command completes
-  executeBasic: (area, startLine) ->
+  runBasic: (area, startLine) ->
     command = new Command 0x02, 0x62, 3
     command.setDataUint8 0, Robot._basicAreaToCode(area)
     command.setDataUint16 1, startLine
     @_session.sendCommand(command).then (response) ->
       true
 
-  # Loads an orBasic program into a storage area.
+  # Loads an orbBasic program into a storage area.
   #
   # This is a convenience wrapper around the {Robot#eraseBasicArea} and
   # {Robot#appendBasicToArea} primitives.
   #
   # @param {String} area the area storing the program; 'ram' or 'flash'
-  # @param {String} fragment the orBasic program fragment to be appended
+  # @param {String} fragment the orbBasic program fragment to be appended
   # @return {Promise<Boolean>} resolved with true when the command completes
   loadBasic: (area, program) ->
     program += "\0" unless program.endsWith("\0")
@@ -354,7 +354,7 @@ class Robot extends EventEmitter
           loadNextFragment()
     @eraseBasicArea(area).then loadNextFragment
 
-  # Erases an orBasic program.
+  # Erases an orbBasic program.
   #
   # This is a primitive operation used by {Robot#loadBasic}.
   #
@@ -366,12 +366,12 @@ class Robot extends EventEmitter
     @_session.sendCommand(command).then (response) ->
       true
 
-  # Appends an orBasic program fragment to a storage area.
+  # Appends an orbBasic program fragment to a storage area.
   #
   # This is a primitive operation used by {Robot#loadBasic}.
   #
   # @param {String} area the area storing the program; 'ram' or 'flash'
-  # @param {String} fragment the orBasic program fragment to be appended
+  # @param {String} fragment the orbBasic program fragment to be appended
   # @return {Promise<Boolean>} resolved with true when the command completes
   appendBasicToArea: (area, fragment) ->
     command = new Command 0x02, 0x61, 1 + fragment.length
@@ -380,9 +380,9 @@ class Robot extends EventEmitter
     @_session.sendCommand(command).then (response) ->
       true
 
-  # Converts a developer-friendly orBasic storage area to a Sphero API code.
+  # Converts a developer-friendly orbBasic storage area to a Sphero API code.
   #
-  # @param {String} area an orBasic area; 'ram' or 'flash'
+  # @param {String} area an orbBasic area; 'ram' or 'flash'
   # @return {Number} the Sphero API code for the area
   @_basicAreaToCode: (area) ->
     switch area
@@ -405,7 +405,7 @@ class Robot extends EventEmitter
         @emit 'macro', event
       when 0x08
         event = { message: async.data.toString('ascii') }
-        @emit 'basicPrint', event
+        @emit 'basic', event
       when 0x09
         event = { message: async.data.toString('ascii') }
         @emit 'basicError', event
