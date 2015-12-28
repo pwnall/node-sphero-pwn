@@ -20,7 +20,6 @@ class BleChannel
 
   # @see {SerialChannel#write}
   write: (data) =>
-    console.log 'write called'
     @open()
       .then =>
         offset = 0
@@ -244,7 +243,7 @@ class BleChannel
   #   to the robot's radio characteristics to activate its serial connection
   @_activationSequence: [
     ['antiDos', new Buffer("011i3")],
-    ['txPower', new Buffer("\x0007")],
+    ['txPower', new Buffer("\x07")],
     ['wakeCpu', new Buffer("\x01")],
   ]
 
