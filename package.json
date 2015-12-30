@@ -1,6 +1,6 @@
 {
   "name": "sphero-pwn",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Driver for Sphero robots",
   "keywords": ["sphero"],
   "homepage": "https://github.com/pwnall/node-sphero-pwn",
