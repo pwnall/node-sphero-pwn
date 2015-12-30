@@ -64,6 +64,8 @@ class DiscoveryClass extends EventEmitter
           @removeListener 'error', onError
           @stop()
           resolve channel
+        else
+          channel.close()
       onError = (error) =>
         @removeListener 'channel', onChannel
         @removeListener 'error', onError
@@ -98,7 +100,10 @@ class DiscoveryClass extends EventEmitter
     BleChannel.fromPeripheral(peripheral)
       .then (bleChannel) =>
         return if bleChannel is null
-        @emit 'channel', bleChannel
+        if @_started is true
+          @emit 'channel', bleChannel
+        else
+          bleChannel.close()
       .catch (error) =>
         @emit 'error', error
 
@@ -109,7 +114,7 @@ class DiscoveryClass extends EventEmitter
   _onSerialPortList: (error, ports) ->
     if error
       @emit 'error', error
-    return unless ports
+    return unless ports and @_started is true
     for port in ports
       continue unless rfconnPath = port.comName
       @_onSerialPort rfconnPath
