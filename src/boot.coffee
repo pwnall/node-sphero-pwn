@@ -4,6 +4,7 @@ Discovery = require './discovery.coffee'
 module.exports = ->
   Discovery.on 'channel', (channel) ->
     console.log "Discovered Sphero: #{channel.sourceId}"
+    channel.close()
   Discovery.on 'error', (error) ->
     console.error error
   Discovery.start()
