@@ -35,6 +35,30 @@ describe 'Robot', ->
         .then (event) =>
           expect(event).to.deep.equal message: "Hello from Basic\n"
 
+  describe '#appendBasicToArea with fragment that exceeds maximum length', ->
+    beforeEach ->
+      testRecordingChannel('basic-too-long')
+        .then (channel) =>
+          @channel = channel
+          @robot = new Robot @channel
+
+    afterEach ->
+      @robot.abortBasic()
+        .then =>
+          @robot.eraseBasicArea 'ram'
+        .then =>
+          @robot.close()
+
+    it 'returns a rejected promise', ->
+      basic = (' ' for i in [0...1042]).join('')
+      @robot.appendBasicToArea('ram', basic)
+        .then (result) =>
+          expect(false).to.equal 'appendBasicToArea promise not rejected'
+        .catch (error) =>
+          expect(error).to.be.an.instanceOf Error
+          expect(error).to.have.property 'message',
+              'orbBasic fragment length 1042 exceeds maximum of 253 bytes'
+
   describe '#loadBasic', ->
     beforeEach ->
       testRecordingChannel('basic-large-print')

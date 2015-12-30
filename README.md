@@ -121,7 +121,7 @@ function play() {
   robot.on('macro', function(event) {
     console.log("macro marker: " + event.markerId);
   });
-  robot.setMacro(0xFF, new Buffer(macro.bytes)).
+  robot.loadMacro(0xFF, new Buffer(macro.bytes)).
     then(function() {
       console.log("Loaded macro in RAM");
       robot.runMacro(0xFF);

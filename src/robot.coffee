@@ -286,15 +286,72 @@ class Robot extends EventEmitter
   #   254 is the streaming macro, and 0-31 are system macros
   # @param {Buffer} macroBytes the compiled macro's contents
   # @return {Promise<Boolean>} resolves to true when the command completes
-  setMacro: (macroId, macroBytes) ->
+  loadMacro: (macroId, macroBytes) ->
+    if macroBytes.length <= 253
+      return _saveMacro macroId, macroBytes
+
+    if macroId isnt 0xFF
+      error = new Error "Macro length #{macroBytes.length} exceeds maximum " +
+                        'of 253 bytes; only the temporary macro be longer'
+      return Promise.reject(error)
+
+    offset = 0
+    loadNextFragment = =>
+      length = macroBytes.length - offset
+      length = 253 if length > 253
+      if length is 0
+        return Promise.resolve true
+      @_appendMacroFragment(offset is 0,
+                            macroBytes.slice(offset, offset + length))
+        .then ->
+          offset += length
+          loadNextFragment()
+    loadNextFragment()
+
+  # Stores a macro in the robot's memory.
+  #
+  # This only works for macros that have at most 253 bytes. {Robot#loadMacro}
+  # handles all the cases correctly.
+  #
+  # @param {Number} macroId the macro's ID number; 255 is the temporary macro,
+  #   254 is the streaming macro, and 0-31 are system macros
+  # @param {Buffer} macroBytes the compiled macro's contents
+  # @return {Promise<Boolean>} resolves to true when the command completes
+  _saveMacro: (macroId, macroBytes) ->
+    if macroBytes.length > 253
+      error = new Error(
+          "Macro length #{macroBytes.length} exceeds maximum of 253 bytes")
+      return Promise.reject(error)
+
     if macroId is 0xFF
       commandId = 0x51  # Save temporary macro.
-      macroId = 0
     else
       commandId = 0x52  # Save macro.
     command = new Command 0x02, commandId, 1 + macroBytes.length
     command.setDataUint8 0, macroId
     command.setDataBytes 1, macroBytes
+    @_session.sendCommand(command).then (response) ->
+      true
+
+  # Appends a fragment of a macro to the robot's temporary storage.
+  #
+  # @param {Boolean} firstFragment true if this is the first appended fragment,
+  #   false otherwise
+  # @param {Buffer} macroBytes the compiled macro's contents
+  # @return {Promise<Boolean>} resolves to true when the command completes
+  _appendMacroFragment: (firstFragment, fragmentBytes) ->
+    if fragmentBytes.length > 254
+      error = new Error "Macro fragment length #{fragmentBytes.length} " +
+                        'exceeds maximum of 254 bytes'
+      return Promise.reject(error)
+
+    if firstFragment is true
+      command = new Command 0x02, 0x58, 1 + fragmentBytes.length
+      command.setDataUint8 0, 0xFF
+      command.setDataBytes 1, fragmentBytes
+    else
+      command = new Command 0x02, 0x58, fragmentBytes.length
+      command.setDataBytes 0, fragmentBytes
     @_session.sendCommand(command).then (response) ->
       true
 
@@ -374,6 +431,11 @@ class Robot extends EventEmitter
   # @param {String} fragment the orbBasic program fragment to be appended
   # @return {Promise<Boolean>} resolved with true when the command completes
   appendBasicToArea: (area, fragment) ->
+    if fragment.length > 253
+      error = new Error "orbBasic fragment length #{fragment.length} " +
+                        'exceeds maximum of 253 bytes'
+      return Promise.reject(error)
+
     command = new Command 0x02, 0x61, 1 + fragment.length
     command.setDataUint8 0, Robot._basicAreaToCode(area)
     command.setDataString 1, fragment
