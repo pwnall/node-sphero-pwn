@@ -405,7 +405,7 @@ class Robot extends EventEmitter
       length = 253 if length > 253
       if length is 0
         return Promise.resolve true
-      @appendBasicToArea(area, program.substring(offset, offset + length))
+      @_appendBasicToArea(area, program.substring(offset, offset + length))
         .then ->
           offset += length
           loadNextFragment()
@@ -430,7 +430,7 @@ class Robot extends EventEmitter
   # @param {String} area the area storing the program; 'ram' or 'flash'
   # @param {String} fragment the orbBasic program fragment to be appended
   # @return {Promise<Boolean>} resolved with true when the command completes
-  appendBasicToArea: (area, fragment) ->
+  _appendBasicToArea: (area, fragment) ->
     if fragment.length > 253
       error = new Error "orbBasic fragment length #{fragment.length} " +
                         'exceeds maximum of 253 bytes'

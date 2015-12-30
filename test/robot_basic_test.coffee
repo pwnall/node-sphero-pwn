@@ -1,7 +1,7 @@
 Robot = SpheroPwn.Robot
 
 describe 'Robot', ->
-  describe '#appendBasicToArea', ->
+  describe '#_appendBasicToArea', ->
     beforeEach ->
       testRecordingChannel('basic-print')
         .then (channel) =>
@@ -25,7 +25,7 @@ describe 'Robot', ->
           expect(result).to.equal true
           @robot.eraseBasicArea 'ram'
         .then (result) =>
-          @robot.appendBasicToArea('ram', basic)
+          @robot._appendBasicToArea('ram', basic)
         .then (result) =>
           expect(result).to.equal true
           new Promise (resolve, reject) =>
@@ -35,7 +35,7 @@ describe 'Robot', ->
         .then (event) =>
           expect(event).to.deep.equal message: "Hello from Basic\n"
 
-  describe '#appendBasicToArea with fragment that exceeds maximum length', ->
+  describe '#_appendBasicToArea with fragment that exceeds maximum length', ->
     beforeEach ->
       testRecordingChannel('basic-too-long')
         .then (channel) =>
@@ -51,9 +51,9 @@ describe 'Robot', ->
 
     it 'returns a rejected promise', ->
       basic = (' ' for i in [0...1042]).join('')
-      @robot.appendBasicToArea('ram', basic)
+      @robot._appendBasicToArea('ram', basic)
         .then (result) =>
-          expect(false).to.equal 'appendBasicToArea promise not rejected'
+          expect(false).to.equal '_appendBasicToArea promise not rejected'
         .catch (error) =>
           expect(error).to.be.an.instanceOf Error
           expect(error).to.have.property 'message',
