@@ -22,6 +22,12 @@ class Robot extends EventEmitter
   close: ->
     @_session.close()
 
+  # Returns the underlying communication channel with the robot.
+  #
+  # @return {Channel} the underlying communication channel to the robot
+  channel: ->
+    @_channel
+
   # Pings the robot, to test that the communication channel works.
   #
   # @return {Promise<Boolean>} resolved with true when the robot responds to

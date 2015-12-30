@@ -55,15 +55,35 @@ class DiscoveryClass extends EventEmitter
   # @return {Promise<Channel>} resolved with a communication channel to the
   #   desired robot
   findChannel: (sourceId) ->
+    @findChannels([sourceId])
+      .then (channels) ->
+        channels[sourceId]
+
+  # Discovers Bluetooth robots until a set of desired robots show up.
+  #
+  # @param {Array<String>} sourceIds the source IDs of the communication
+  #   channels to the desired robots
+  # @return {Promise<Object<String, Channel>>} resolved with an object that
+  #   maps source IDs to communication channels to the desired robots
+  findChannels: (sourceIds) ->
+    channelsLeft = sourceIds.length
+    channels = {}
+    for sourceId in sourceIds
+      channels[sourceId] = null
+
     new Promise (resolve, reject) =>
       @stop()
       @reset()
       onChannel = (channel) =>
-        if channel.sourceId is sourceId
-          @removeListener 'channel', onChannel
-          @removeListener 'error', onError
-          @stop()
-          resolve channel
+        sourceId = channel.sourceId
+        if sourceId of channels and channels[sourceId] is null
+          channels[sourceId] = channel
+          channelsLeft -= 1
+          if channelsLeft is 0
+            @removeListener 'channel', onChannel
+            @removeListener 'error', onError
+            @stop()
+            resolve channels
         else
           channel.close()
       onError = (error) =>
