@@ -103,21 +103,8 @@ class Robot extends EventEmitter
     name = data.toString('utf8', 0, 16).replace(/\u0000*$/, '')
     mac = data.toString 'utf8', 16, 28
     colors = for i in [0...3]
-      @_colorNameFromCode data.readUInt8(29 + i)
+      String.fromCharCode data.readUInt8(29 + i)
     { name: name, mac: mac, colors: colors }
-
-  # Converts a Sphero API color code to a name.
-  #
-  # @param {Number} code the Sphero API color code
-  # @return {String} the name of the color; 'invalid' if the code does not
-  #   represent a known color code
-  @_colorNameFromCode: (code) ->
-    return 'invalid' if code < 0 || code > 7
-    @_colorCodes[code]
-
-  # @return {Array<String>} color names for the Sphero API color codes
-  @_colorCodes =
-    ['invalid', 'red', 'green', 'blue', 'orange', 'purple', 'white', 'yellow']
 
   # Obtains the robot's hackability.
   #
