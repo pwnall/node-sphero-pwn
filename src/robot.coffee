@@ -106,6 +106,45 @@ class Robot extends EventEmitter
       String.fromCharCode data.readUInt8(29 + i)
     { name: name, mac: mac, colors: colors }
 
+  # Retrieves L2 diagnostic information from the robot.
+  #
+  # @return {Promise<Object>} resolved with an object representing the
+  #   diagnostic information
+  getL2Diagnostics: ->
+    command = new Command 0x00, 0x41, 0
+    @_session.sendCommand(command).then (response) ->
+      Robot._l2DiagnosticsFromData response.data
+
+  # Parses L2 diagnostic information from an API response.
+  #
+  # @param {Buffer} data the data field in the API response
+  # @return {Object} the parsed L2 diagnostic information
+  _l2DiagnosticsFromData: (data) ->
+    recordVersion = data.readUInt8 0x00
+    l2 = {}
+    if recordVersion >= 1
+      l2.reserved1 = data.readUInt8 0x02
+      l2.packetsReceived =
+        good: data.readUInt32 0x03
+        badDeviceId: data.readUInt32 0x07
+        badDataLength: data.readUInt32 0x0B
+        badCommandId: data.readUInt32 0x0F
+        badChecksum: data.readUInt32 0x13
+        bufferOverrun: data.readUInt32 0x17
+      l2.packetsSent =
+        good: data.readUInt32 0x1B
+        bufferOverrun: data.readUInt32 0x1F
+      l2.lastBootReason = data.readUInt8 0x23
+      l2.bootCounters = (data.readUInt32(0x24 + 4 * i) for i in [0...16])
+      l2.reserved2 = data.readUInt16 0x44
+      l2.chargeCount = data.readUInt16 0x46
+      l2.secondsSinceChange = data.readUInt16 0x48
+      l2.secondsOn = data.readUInt32 0x4A
+      l2.distanceRolled = data.readUInt32 0x4E
+      l2.sensorFailures = data.readUInt16 0x52
+      l2.gyroAdjusts = data.readUInt32 0x54
+    l2
+
   # Obtains the robot's hackability.
   #
   # @return {Promise<String>} resolved with a string describing the device's
