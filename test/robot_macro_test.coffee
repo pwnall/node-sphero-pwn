@@ -205,7 +205,7 @@ describe 'Robot', ->
           @robot.abortMacro()
         .then (result) =>
           expect(result).to.equal null
-          @robot._saveMacro 0x40, macroBytes
+          @robot.loadMacro 0x40, macroBytes
         .then (result) =>
           expect(result).to.equal true
           new Promise (resolve, reject) =>
@@ -237,7 +237,7 @@ describe 'Robot', ->
       macroBytes = new Buffer(0x00 for i in [0...1042])
       @robot.loadMacro 0x40, macroBytes
         .then (result) =>
-          expect(false).to.equal '_saveMacro promise not rejected'
+          expect(false).to.equal 'loadMacro promise not rejected'
         .catch (error) =>
           expect(error).to.be.an.instanceOf Error
           expect(error).to.have.property 'message',
@@ -267,7 +267,7 @@ describe 'Robot', ->
           @robot.abortMacro()
         .then (result) =>
           expect(result).to.equal null
-          @robot._saveMacro 0xFF, macroBytes
+          @robot.loadMacro 0xFF, macroBytes
         .then (result) =>
           expect(result).to.equal true
           new Promise (resolve, reject) =>

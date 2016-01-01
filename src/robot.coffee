@@ -70,6 +70,55 @@ class Robot extends EventEmitter
         minor: data[9]
     versions
 
+  # Sets the robot's name, as seen by other applications.
+  #
+  # @param {String} name the robot name
+  # @return {Promise<Boolean>} resolved with true when the robot responds to
+  #   the ping
+  setDeviceName: (name) ->
+    if name.length > 16
+      error = new Error "Name too long; #{name.length} characters exceeds" +
+                        '16-character limit'
+      return Promise.reject(error)
+
+    command = new Command 0x00, 0x10, name.length
+    command.setDataString 0, name
+    @_session.sendCommand(command).then (response) ->
+      true
+
+  # Retrieves the robot's name and Bluetooth identification info.
+  #
+  # @return {Promise<Object>} resolved with an object representing the
+  #   Bluetooth info; the object has properties 'name', 'mac', and 'colors'
+  getBluetoothInfo: ->
+    command = new Command 0x00, 0x11, 0
+    @_session.sendCommand(command).then (response) ->
+      Robot._bluetoothInfoFromData response.data
+
+  # Parses Bluetooth information from an API response.
+  #
+  # @param {Buffer} data the data field in the API response
+  # @return {Object} parsed Bluetooth information
+  @_bluetoothInfoFromData: (data) ->
+    name = data.toString('utf8', 0, 16).replace(/\u0000*$/, '')
+    mac = data.toString 'utf8', 16, 28
+    colors = for i in [0...3]
+      @_colorNameFromCode data.readUInt8(29 + i)
+    { name: name, mac: mac, colors: colors }
+
+  # Converts a Sphero API color code to a name.
+  #
+  # @param {Number} code the Sphero API color code
+  # @return {String} the name of the color; 'invalid' if the code does not
+  #   represent a known color code
+  @_colorNameFromCode: (code) ->
+    return 'invalid' if code < 0 || code > 7
+    @_colorCodes[code]
+
+  # @return {Array<String>} color names for the Sphero API color codes
+  @_colorCodes =
+    ['invalid', 'red', 'green', 'blue', 'orange', 'purple', 'white', 'yellow']
+
   # Obtains the robot's hackability.
   #
   # @return {Promise<String>} resolved with a string describing the device's
@@ -294,7 +343,7 @@ class Robot extends EventEmitter
   # @return {Promise<Boolean>} resolves to true when the command completes
   loadMacro: (macroId, macroBytes) ->
     if macroBytes.length <= 253
-      return _saveMacro macroId, macroBytes
+      return @_saveMacro macroId, macroBytes
 
     if macroId isnt 0xFF
       error = new Error "Macro length #{macroBytes.length} exceeds maximum " +
