@@ -106,6 +106,14 @@ class Robot extends EventEmitter
       String.fromCharCode data.readUInt8(29 + i)
     { name: name, mac: mac, colors: colors }
 
+  # Retrieves L1 diagnostic information from the robot.
+  #
+  # @return {Promise<String>} resolved with the diagnostic result, in text form
+  getL1Diagnostics: ->
+    command = new Command 0x00, 0x40, 0
+    @_session.sendAsyncCommand(command, 0x02).then (response) ->
+      response.data.toString 'utf8'
+
   # Retrieves L2 diagnostic information from the robot.
   #
   # @return {Promise<Object>} resolved with an object representing the

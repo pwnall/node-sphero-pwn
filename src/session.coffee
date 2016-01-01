@@ -22,7 +22,7 @@ class Session
     @_rejects = new Array 256
     @_rejects[i] = null for i in [0...256]
 
-    @_asyncResolves = {}
+    @_asyncHandlers = {}
 
 
   # Sends a command to the robot and receives its response.
@@ -53,24 +53,37 @@ class Session
   #
   # @param {Command} command the command to be sent to the robot; the command
   #   will receive a sequence number and have its checksum recomputed
-  # @param {Number} asyncIdCode the ID code of the asynchronous message that
+  # @param {Number} idCode the ID code of the asynchronous message that
   #   responds to this command
   # @return {Promise<Object>} resolved with an obect that describes the
   #   command's response;
-  sendAsyncCommand: (command, asyncIdCode) ->
+  sendAsyncCommand: (command, idCode) ->
+    if idCode of @_asyncHandlers
+      error = new Error("Already waiting for async message with ID #{idCode}")
+      return Promise.reject error
+
+    asyncMessage = null
+    handler = (message) =>
+      asyncMessage = message
+    @_asyncHandlers[idCode] = handler
+
     new Promise (resolve, reject) =>
-      if @_asyncResolves[asyncIdCode]
-        reject new Error(
-            "Already waiting for async message with ID #{asyncIdCode}")
-        return
-      @_asyncResolves[asyncIdCode] = resolve
+      @sendCommand(command)
+        .catch (error) =>
+          delete @_asyncHandlers[idCode]
+          reject error
+        .then (response) =>
+          if asyncMessage isnt null
+            resolve asyncMessage
+            return
+          @_asyncHandlers[idCode] = (message) =>
+            resolve message
 
   # Closes the communication channel used by the session.
   #
   # @return {Promise} resolved when the channel is closed
   close: ->
     @_channel.close()
-
 
   # Called when an error is encountered while communicating with the robot.
   #
@@ -98,6 +111,14 @@ class Session
 
   # @see {Tokenizer#onAsync}
   _onTokenizerAsync: (async) ->
+    idCode = async.idCode
+    if idCode of @_asyncHandlers
+      try
+        @_asyncHandlers[idCode](async)
+      finally
+        delete @_asyncHandlers[idCode]
+      return
+
     # TODO(pwnall): filter async
     @onAsync async
 

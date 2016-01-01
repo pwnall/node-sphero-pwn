@@ -19,7 +19,6 @@ describe 'Robot', ->
       basic = """
 10 print "Hello from Basic"
 \0"""
-      @robot.on 'basicError', (error) => console.error error
       @robot.abortBasic()
         .then (result) =>
           expect(result).to.equal true
@@ -79,7 +78,6 @@ describe 'Robot', ->
         basic += "#{i}0 print \"Hello from Basic line #{i}0\"\n"
         basic += "#{i}5 end\n"
 
-      @robot.on 'basicError', (error) => console.error error
       @robot.abortBasic()
         .then (result) =>
           @robot.loadBasic('ram', basic)

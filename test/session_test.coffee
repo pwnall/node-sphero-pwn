@@ -45,3 +45,49 @@ describe 'Session', ->
         expect(response).to.have.property 'code', 0x00
         expect(response).to.have.property 'data'
         expect(response.data).to.deep.equal new Buffer([])
+
+
+  describe 'with a l1 diagnostics recording', ->
+    beforeEach ->
+      testRecordingChannel('session-l1_diagnostics').then (channel) =>
+        @channel = channel
+
+    afterEach ->
+      @channel.close()
+
+    it 'resolves an L1 diagnostics command', ->
+      session = new Session @channel
+      command = new Command 0x00, 0x40, 0
+      session.sendAsyncCommand(command, 0x02).then (message) =>
+        expect(message).to.have.property 'idCode', 0x02
+        expect(message).to.have.property 'data'
+
+  describe 'with a synthetic l1 diagnostics recording', ->
+    beforeEach ->
+      testRecordingChannel('synthetic-l1_diagnostics').then (channel) =>
+        @channel = channel
+
+    afterEach ->
+      @channel.close()
+
+    it 'resolves an L1 diagnostics command', ->
+      session = new Session @channel
+      command = new Command 0x00, 0x40, 0
+      session.sendAsyncCommand(command, 0x02).then (message) =>
+        expect(message).to.have.property 'idCode', 0x02
+        expect(message.data).to.deep.equal new Buffer("Hello")
+
+  describe 'with an inverted synthetic l1 diagnostics recording', ->
+    beforeEach ->
+      testRecordingChannel('synthetic-l1_diagnostics').then (channel) =>
+        @channel = channel
+
+    afterEach ->
+      @channel.close()
+
+    it 'resolves an L1 diagnostics command', ->
+      session = new Session @channel
+      command = new Command 0x00, 0x40, 0
+      session.sendAsyncCommand(command, 0x02).then (message) =>
+        expect(message).to.have.property 'idCode', 0x02
+        expect(message.data).to.deep.equal new Buffer("Hello")

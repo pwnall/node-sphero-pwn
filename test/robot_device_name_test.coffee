@@ -18,7 +18,6 @@ describe 'Robot', ->
         .then (channel) =>
           @channel = channel
           @robot = new Robot @channel
-          @robot.on 'error', (error) => console.error error
           @robot.getBluetoothInfo()
         .then (bluetoothInfo) =>
           @name = bluetoothInfo.name
