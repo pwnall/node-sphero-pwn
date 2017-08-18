@@ -14,7 +14,7 @@ unlikely to be added to the official project, such as driving a
 [BB-8](http://www.sphero.com/starwars).
 
 This project is written in [CoffeeScript](http://coffeescript.org/) and tested
-using [mocha](http://visionmedia.github.io/mocha/).
+using [mocha](http://mochajs.org/).
 
 
 ## Usage
